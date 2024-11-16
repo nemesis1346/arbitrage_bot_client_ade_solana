@@ -1,0 +1,36 @@
+{
+    "name": "solana-arbitrage-bot",
+    "version": "1.0.0",
+    "description": "A Solana-based project to interact with Orca Whirlpools and test for arbitrage opportunities.",
+    "main": "index.js",
+    "scripts": {
+      "start": "node index.js",
+      "test": "mocha"
+    },
+    "dependencies": {
+      "@orca-so/whirlpools-sdk": "^0.13.10", 
+      "@solana/web3.js": "^1.73.0",
+      "dotenv": "^16.0.3",
+      "axios": "^1.4.0"
+    },
+    "devDependencies": {
+      "mocha": "^10.2.0",
+      "chai": "^4.3.7",
+      "eslint": "^8.47.0",
+      "eslint-config-prettier": "^9.0.0",
+      "eslint-plugin-prettier": "^5.0.0",
+      "prettier": "^3.0.3"
+    },
+    "engines": {
+      "node": ">=16"
+    },
+    "keywords": [
+      "solana",
+      "orca",
+      "whirlpools",
+      "arbitrage",
+      "defi"
+    ],
+    "author": "Your Name",
+    "license": "MIT"
+  }
