@@ -1,13 +1,22 @@
-const { WhirlpoolClient, 
+const { 
     WhirlpoolContext,
+    ORCA_WHIRLPOOLS_CONFIG,
+    ORCA_WHIRLPOOL_PROGRAM_ID,
     WhirlpoolAccountFetcher,
     PriceMath,
     increaseLiquidityQuoteByInputToken,
     TickUtil,
-    buildWhirlpoolClient
+    buildWhirlpoolClient,
+    PDAUtil
 } = require('@orca-so/whirlpools-sdk');
-const { Connection, Keypair,clusterApiUrl, LAMPORTS_PER_SOL,PublicKey, address } = require('@solana/web3.js');
-const { ORCA_WHIRLPOOL_PROGRAM_ID } = require('@orca-so/whirlpools-sdk');
+const {
+    Connection, 
+    Keypair,
+    clusterApiUrl, 
+    LAMPORTS_PER_SOL,
+    PublicKey,
+    address,  
+} = require('@solana/web3.js');
 const fs = require('fs');
 const Decimal = require('decimal.js');
 
@@ -59,43 +68,34 @@ async function requestAirdrop(wallet) {
     }
 }
 
+async function get_pool_by_pool_address(tokenA_public_key, tokenB_public_key){
+      return PDAUtil.getWhirlpool(
+        ORCA_WHIRLPOOL_PROGRAM_ID,
+        ORCA_WHIRLPOOLS_CONFIG,
+        tokenA_public_key,
+        tokenB_public_key,
+        64
+    )
+}
 
-async function main(){
-    
-    // Not yet working
-    // await requestAirdrop(wallet);
-    
-    // check the balance of my wallet
-    const balance =await connection.getBalance(wallet.publicKey);
-    console.log('Balance:', balance / LAMPORTS_PER_SOL, 'SOL');
-    
-    const ctx = WhirlpoolContext.from(connection, wallet,ORCA_WHIRLPOOL_PROGRAM_ID);
-    // console.log('Context created:', ctx);
-    const fetcher = new WhirlpoolAccountFetcher(ctx.provider.connection);
-    // console.log('Fetcher created:', fetcher);
-    
-    const client = buildWhirlpoolClient(ctx)
-    // console.log('Client created:', client);
-    
-    const SOL_USDC_64 = new PublicKey("Czfq3xZZDmsdGdUyrNLtRhGc47cXcZtLG4crryfu44zE");
-    
-    const whirlpool = await client.getPool(SOL_USDC_64);
-    
-    // Print the pool addresses
-    console.log(whirlpool); // Pool address
-    
-    const poolData = whirlpool.getData();
+async function get_pool_by_client(client, pool_address){
+    console.log('Param: Pool Address:', typeof(pool_address), pool_address);
+    return await client.getPool(pool_address);
+}
+
+async function get_pool_information(pool){
+    const poolData = pool.getData();
     // console.log('Pool Data:', poolData);
-    const poolTokenAInfo = whirlpool.getTokenAInfo();
+    const poolTokenAInfo = pool.getTokenAInfo();
     // console.log('Pool Token A Info:', poolTokenAInfo);
-    const poolTokenBInfo = whirlpool.getTokenBInfo();
+    const poolTokenBInfo = pool.getTokenBInfo();
     // console.log('Pool Token B Info:', poolTokenBInfo);
-    
     // Derive the tick-indices based on a human-readable price
     const tokenADecimal = poolTokenAInfo.decimals;
     console.log('Token A Decimal:', tokenADecimal);
     const tokenBDecimal = poolTokenBInfo.decimals;
-    console.log('Token B Decimal:', tokenBDecimal); 
+    console.log('Token B Decimal:', tokenBDecimal);
+    
     const tickLower = TickUtil.getInitializableTickIndex(
         PriceMath.priceToTickIndex(new Decimal(98), tokenADecimal, tokenBDecimal),
         poolData.tickSpacing
@@ -107,8 +107,16 @@ async function main(){
     );
     console.log('Tick Upper:', tickUpper);
 
-    const fraction = new Decimal(1).div(100);
+    return {
+        "poolTokenAInfo": poolTokenAInfo,
+        "tickLower": tickLower,
+        "tickUpper": tickUpper,
+    }
+}
 
+async function calculate_arbitrage(poolTokenAInfo, tickLower, tickUpper, whirlpool){
+    const fraction = new Decimal(1).div(100);
+    
     // Get a quote on the estimated liquidity and tokenIn (50 tokenA)
     const quote = increaseLiquidityQuoteByInputToken(
         poolTokenAInfo.mint,
@@ -119,6 +127,52 @@ async function main(){
         whirlpool
     );
     console.log('Quote:', quote);
+}
+
+async function initiate_arbitrage(){
+    let pool_by_client
+    const ctx = WhirlpoolContext.from(connection, wallet, ORCA_WHIRLPOOL_PROGRAM_ID);
+    // console.log('Context created:', ctx);
+    const fetcher = new WhirlpoolAccountFetcher(ctx.provider.connection);
+    // console.log('Fetcher created:', fetcher);
+    const client = buildWhirlpoolClient(ctx, fetcher)
+    // console.log('Client created:', client);
+    
+    const SOL_USDC_64_pool_address = new PublicKey("Czfq3xZZDmsdGdUyrNLtRhGc47cXcZtLG4crryfu44zE");
+    pool_by_client = await get_pool_by_client(client, SOL_USDC_64_pool_address)
+    console.log('Pool by Client:', pool_by_client.address); 
+    pool_information = await get_pool_information(pool_by_client);
+    console.log('Pool Information:', pool_information);
+    
+    //TODO: this maybe is not working because it needs to exists in the blockchain, maybe doesnt exists yet
+    // const SOL_MINT_pool_address = new PublicKey('So11111111111111111111111111111111111111112');
+    // const USDC_MINT_pool_address = new PublicKey('Es9vMFrzaCERz1k1b7z7Z1u1Z1u1Z1u1Z1u1Z1u1Z1u1');
+    // const pool_by_pool_address = await get_pool_by_pool_address(SOL_MINT_pool_address, USDC_MINT_pool_address);
+    // console.log('Pool by Pool Address address:', pool_by_pool_address.publicKey);
+    // pool_by_client = await get_pool_by_client(client, pool_by_pool_address.publicKey)
+    // console.log('Pool by Client:', pool.address); 
+    // await get_pool_information(pool_by_pool_address);
+
+    await calculate_arbitrage(
+        pool_information["poolTokenAInfo"], 
+        pool_information["tickLower"], 
+        pool_information["tickUpper"], 
+        pool_by_client);
+    
+}
+
+
+async function main(){
+    
+    // Not yet working
+    // await requestAirdrop(wallet);
+    
+    // check the balance of my wallet
+    const balance =await connection.getBalance(wallet.publicKey);
+    console.log('Balance:', balance / LAMPORTS_PER_SOL, 'SOL');
+    
+    
+    await initiate_arbitrage();
 }
 
 main().catch((error) => {
