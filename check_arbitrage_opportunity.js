@@ -41,55 +41,81 @@ async function getPoolData(poolName, poolAddress) {
     // console.log(poolName+ ' Linear Price:',linear_price.toFixed());
     const normalized_price = linear_price.div(new Decimal(2).pow(128));
     console.log(poolName+ ' Normalized Price:',normalized_price.toFixed(6));
-
+    
     return {
         "pool":pool,
         "tokenAInfo": pool.getTokenAInfo(),
         "tokenBInfo": pool.getTokenBInfo(),
         "normalizedPrice": normalized_price,
     };
-  }
+}
 
 async function checkArbitrageOpportunity(pool1Name, pool1Address,pool2Name, pool2Address) {
     const pool1Data = await getPoolData(pool1Name, pool1Address);
     const pool2Data = await getPoolData(pool2Name, pool2Address);
-  
-    // Calculate the potential profit
-    let potentialProfit = 0;
     
-    // Assuming we trade 1000 USDC
-    let amountIn = 1000; //adjust accordingly
+    let amountIn = 10000; //SOL
     
-    // Trade in Pool 1: USDC -> SOL
-    let amountOutFromPool1 = amountIn * (1/pool1Data.normalizedPrice);
+    // Case 1: Trade Pool 1 → Pool 2
+    let amountOutFromPool1 = amountIn * pool1Data.normalizedPrice;
+    let amountOutFromPool2 = amountOutFromPool1 * (1 / pool2Data.normalizedPrice);
     
-    // Trade in Pool 2: SOL -> USDC
-    let amountOutFromPool2 = amountOutFromPool1 * (1/pool2Data.normalizedPrice);
+    let fees1 = 0.003 * amountIn;
+    let fees2 = 0.003 * amountOutFromPool1;
+    let totalFees1 = fees1 + fees2;
     
-    // Deduct fees
-    let fee1 = 0.003 * amountIn;
-    let fee2 = 0.003 * amountOutFromPool1;
+    let profit1 = Math.abs(amountOutFromPool2) - Math.abs(amountIn) - Math.abs(totalFees1);
     
-    let totalFees = fee1 + fee2;
-    console.log('Total Fees: ', totalFees);
+    console.log("Profit (Pool 1 → Pool 2):", profit1);
     
-    // Final profit after fees
-    let finalProfit = amountOutFromPool2 - amountIn - totalFees;
+    // Case 2: Trade Pool 2 → Pool 1
+    let amountOutFromPool2Reverse = amountIn * pool2Data.normalizedPrice;
+    let amountOutFromPool1Reverse = amountOutFromPool2Reverse * (1 / pool1Data.normalizedPrice);
     
-    if (finalProfit > 0) {
-        console.log("Arbitrage opportunity found! Profit:", finalProfit);
+    let fees1Reverse = 0.003 * amountIn;
+    let fees2Reverse = 0.003 * amountOutFromPool2Reverse;
+    let totalFees2 = fees1Reverse + fees2Reverse;
+    
+    let profit2 = Math.abs(amountOutFromPool1Reverse) - Math.abs(amountIn) - Math.abs(totalFees2);
+    
+    console.log("Profit (Pool 2 → Pool 1):", profit2);
+    
+    // Determine arbitrage direction
+    if (profit1 > 0) {
+        console.log("Arbitrage opportunity! Buy in Pool 1, sell in Pool 2. Profit:", profit1);
+    } else if (profit2 > 0) {
+        console.log("Arbitrage opportunity! Buy in Pool 2, sell in Pool 1. Profit:", profit2);
     } else {
-        const loses = finalProfit;
-        console.log("No profitable arbitrage opportunity, you lose: ", loses);
+        console.log("No profitable arbitrage opportunity in either direction.");
     }
-  }
+}
+
+async function executeSwap(poolFrom, poolTo, amountIn, slippage, wallet, orca) {
+    const tokenIn = poolFrom.getTokenA(); // Token you're selling
+    const tokenOut = poolFrom.getTokenB(); // Token you're buying
+    
+    console.log(`Swapping ${amountIn} ${tokenIn.mint} for ${tokenOut.mint}`);
+    
+    // Execute swap in the first pool
+    const swap1 = await poolFrom.swap(wallet, tokenIn.mint, OrcaU64.fromNumber(amountIn), slippage);
+    console.log("First swap transaction signature:", swap1.signature);
+    
+    // Fetch output amount after the first swap
+    const amountOut = swap1.outputAmount.toNumber();
+    
+    // Execute swap in the second pool
+    const swap2 = await poolTo.swap(wallet, poolTo.getTokenA().mint, OrcaU64.fromNumber(amountOut), slippage);
+    console.log("Second swap transaction signature:", swap2.signature);
+    
+    console.log("Arbitrage executed successfully!");
+}
 
 async function monitorArbitrage() {
     const pool1Address = new PublicKey('C1MgLojNLWBKADvu9BHdtgzz1oZX4dZ5zGdGcgvvW8Wz'); // JUP/SOL
     const pool2Address = new PublicKey('DkVN7RKTNjSSER5oyurf3vddQU2ZneSCYwXvpErvTCFA'); // JUP/SOL
     
     setInterval(() => {
-        checkArbitrageOpportunity("JUP/SOL_1",pool1Address, "BONK/SOL_2",pool2Address);
+        checkArbitrageOpportunity("JUP/SOL_1",pool1Address, "JUP/SOL_2",pool2Address);
     }, 15000); // Check every 30 seconds
 }
 
