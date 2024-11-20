@@ -33,7 +33,7 @@ async function executeTrade(poolAddress, amountIn, amountOutMin) {
 async function getPoolData(poolName, poolAddress) {
     const pool = await context.client.getPool(poolAddress);
     const poolData = pool.getData();
-    // console.log("Pool Data:", poolData);
+    console.log("Pool Data:", poolData);
     // console.log('Pool Token A Info:', pool.getTokenAInfo());
     // console.log('Pool Token B Info:', pool.getTokenBInfo());  
     Decimal.set({ precision: 100 });

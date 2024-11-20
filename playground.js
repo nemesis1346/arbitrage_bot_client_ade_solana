@@ -1,3 +1,4 @@
+//This script was just initial playgrounds with the sdk,
 const {
     getContext
 } = require('./setup_wallet');

@@ -2,4 +2,4 @@
 node 18
 
 ### Testing
-node ./test.js
+node ./check_arbitrage_opportunity.js
