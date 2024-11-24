@@ -2,6 +2,7 @@ const { getContext } = require('./setup_wallet');
 const {
   getPoolDataFromRaydium,
   getPoolDataFromOrca,
+  getPoolDataFromMeteora,
 } = require('./pool_information');
 const { PublicKey } = require('@solana/web3.js');
 
@@ -35,7 +36,7 @@ async function executeTrade(poolAddress, amountIn, amountOutMin) {
 async function checkArbitrageOpportunity(pool1Address, pool2Address) {
   const pool1Data = await getPoolDataFromRaydium(context, pool1Address);
   console.log('Pool 1 Data : ', pool1Data);
-  const pool2Data = await getPoolDataFromRaydium(context, pool2Address);
+  const pool2Data = await getPoolDataFromMeteora(context, pool2Address);
   console.log('Pool 2 Data :', pool2Data);
 
   let amountIn = 10000; //SOL
@@ -52,7 +53,7 @@ async function checkArbitrageOpportunity(pool1Address, pool2Address) {
   console.log('AmmountOut from Pool 2: ', amountOutFromPool2);
 
   let profit1 =
-    Math.abs(amountIn) - Math.abs(amountOutFromPool2) - Math.abs(totalFees1);
+    Math.abs(amountOutFromPool2) - Math.abs(amountIn) - Math.abs(totalFees1);
 
   console.log('Profit (Pool 1 → Pool 2):', profit1);
 
@@ -124,9 +125,9 @@ async function monitorArbitrage() {
   const pool1Address = new PublicKey(
     'EZVkeboWeXygtq8LMyENHyXdF5wpYrtExRNH9UwB1qYw'
   ); // JUP/SOL
-  const pool2Address = new PublicKey(
-    '7WMCUyZXrDxNjAWjuh2r7g8CdT2guqvrmdUPAnGdLsfG'
-  ); // JUP/SOL
+  // const pool2Address = new PublicKey(
+  //   '7WMCUyZXrDxNjAWjuh2r7g8CdT2guqvrmdUPAnGdLsfG'
+  // ); // JUP/SOL
 
   // with orca
   //   const pool1Address = new PublicKey(
@@ -138,6 +139,14 @@ async function monitorArbitrage() {
 
   // const pool1Address = new PublicKey('6cBGJQohD7mUHe5VBEwysbPxNZewCATFhhnc5yMAyU7S'); // ELIZA/SOL
   // const pool2Address = new PublicKey('5XRwBfvsrmn1fy1hzrPrwFHr2rADJCeZDxPxVE1PNzhf'); // ELIZA/SOL
+
+  //with meteora
+  // const pool1Address = new PublicKey(
+  //   'hPkPt9Mvu3f6Bpky38ekfqRb37DSFnHtdjnFpfF86wY'
+  // ); // JUP/SOL
+  const pool2Address = new PublicKey(
+    '2bgMd1TDJRvn9rw1fFsMHoERnmHemwfEA1FCikTpuWaJ'
+  ); // JUP/SOL
 
   setInterval(async () => {
     checkArbitrageOpportunity(pool1Address, pool2Address);

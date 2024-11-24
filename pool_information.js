@@ -25,7 +25,35 @@ async function getPoolDataFromRaydium(context, poolAddress) {
       feeRate: metadata_raydium_pool.feeRate,
     };
   } catch (error) {
-    console.error('Error fetching Raydium Pool Info:', error.message);
+    console.error('Error fetching Meteora Pool Info:', error.message);
+  }
+}
+
+async function getPoolDataFromMeteora(context, poolAddress) {
+  try {
+    const url = 'https://amm-v2.meteora.ag/pools';
+
+    const params = {
+      address: poolAddress.toString(),
+    };
+
+    const response = await axios.get(url, {
+      headers: {
+        "accept": 'application/json',
+      },
+      params: params
+    });
+    const meteora_pool = response.data[0];
+    // console.log('response meteora pool data:', meteora_pool);
+
+    const pairRatio  = meteora_pool.pool_token_amounts[0]/meteora_pool.pool_token_amounts[1]
+
+    return {
+        normalizedPrice: pairRatio,
+        feeRate: meteora_pool.total_fee_pct/100,
+      };
+  } catch (error) {
+    console.error('Error fetching Meteora Pool Info:', error.message);
   }
 }
 
@@ -79,4 +107,5 @@ async function getPoolDataFromOrca(context, poolAddress) {
 module.exports = {
   getPoolDataFromRaydium,
   getPoolDataFromOrca,
+  getPoolDataFromMeteora,
 };
