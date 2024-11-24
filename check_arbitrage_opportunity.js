@@ -4,22 +4,28 @@ const {
   getPoolDataFromOrca,
   getPoolDataFromMeteora,
 } = require('./pool_information');
+const { 
+  MIN_SQRT_PRICE
+} = require('@orca-so/whirlpools-sdk');
 const { PublicKey } = require('@solana/web3.js');
 
 // Use the setup module
 const context = getContext();
 
-async function executeTradeByOrca(poolAddress, amountIn, amountOutMin) {
+async function executeTradeByOrca(poolAddress, amountIn) {
   const pool = await context.client.getPool(poolAddress);
-  const tokenA = pool.tokenA; // Adjust as per actual token names
-  const tokenB = pool.tokenB;
+
+  const swapInput = {
+    amount: amountIn,
+    otherAmountThreshold: 0,
+    sqrtPriceLimit: MIN_SQRT_PRICE,
+    amountSpecifiedIsInput: true,
+    aToB: true,
+  }
 
   // Define your swap parameters
   const swapInstruction = await context.client.swap({
-    amountIn: amountIn,
-    amountOutMin: amountOutMin,
-    tokenA: tokenA,
-    tokenB: tokenB,
+    swapInput
   });
 
   // Create and send the transaction
@@ -79,11 +85,13 @@ async function checkArbitrageOpportunity(pool1Address, pool2Address) {
       'Arbitrage opportunity! Buy in Pool 1, sell in Pool 2. Profit:',
       profit1 + '\n'
     );
+    await executeTradeByOrca(pool1Address,amountIn)
   } else if (profit2 > 0) {
     console.log(
       'Arbitrage opportunity! Buy in Pool 2, sell in Pool 1. Profit:',
       profit2 + '\n'
     );
+    await executeTradeByOrca(pool2Address,amountIn)
   } else {
     console.log('No profitable arbitrage opportunity in either direction.\n');
   }
