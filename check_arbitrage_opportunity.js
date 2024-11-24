@@ -9,14 +9,13 @@ const { PublicKey } = require('@solana/web3.js');
 // Use the setup module
 const context = getContext();
 
-async function executeTrade(poolAddress, amountIn, amountOutMin) {
-  const client = new WhirlpoolClient(ctx);
+async function executeTradeByOrca(poolAddress, amountIn, amountOutMin) {
   const pool = await context.client.getPool(poolAddress);
   const tokenA = pool.tokenA; // Adjust as per actual token names
   const tokenB = pool.tokenB;
 
   // Define your swap parameters
-  const swapInstruction = await client.swap({
+  const swapInstruction = await context.client.swap({
     amountIn: amountIn,
     amountOutMin: amountOutMin,
     tokenA: tokenA,
