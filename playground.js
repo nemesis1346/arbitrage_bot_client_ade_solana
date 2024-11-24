@@ -119,24 +119,57 @@ async function getPoolDataFromMeteora_test() {
 
     const response = await axios.get(url, {
       headers: {
-        'accept': 'application/json',
+        accept: 'application/json',
       },
-      params :params
+      params: params,
     });
     // console.log('Response: ', response);
     const meteora_pool = response.data[0];
     // console.log('response data:', meteora_pool);
 
-    const pairRatio  = meteora_pool.pool_token_amounts[0]/meteora_pool.pool_token_amounts[1]
+    const pairRatio =
+      meteora_pool.pool_token_amounts[0] / meteora_pool.pool_token_amounts[1];
 
     return {
-        normalizedPrice: pairRatio,
-        feeRate: meteora_pool.total_fee_pct/100,
-      };
-    
+      normalizedPrice: pairRatio,
+      feeRate: meteora_pool.total_fee_pct / 100,
+    };
   } catch (error) {
     console.error('Error fetching Meteora Pool Info:', error);
   }
+}
+
+async function getTokenNameByTokenMintInfo() {
+  //TODO: get the name of the token
+  // Fetch token mint information
+  //   console.log(
+  //     'Token A Mint is PublicKey:',
+  //     pool.getTokenAInfo().mint instanceof PublicKey
+  //   );
+  //   console.log(
+  //     'Connection is connection:',
+  //     context.connection instanceof Connection
+  //   );
+
+  //   const mintDetails = await getMint(
+  //     new Connection(clusterApiUrl('mainnet-beta'), 'confirmed'),
+  //     new PublicKey('HVJuVW2dRbZ2fynWEY2JK6Ak2YTfVpji73sHZMCqiXSb'),
+  //     undefined,
+  //     TOKEN_2022_PROGRAM_ID
+  //   );
+  //   console.log('Mint Details:', mintDetails);
+
+  //   const mintInfo = await getTokenMetadata(
+  //     //   context.connection,
+  //     new Connection(clusterApiUrl('mainnet-beta'), 'confirmed'),
+  //     // pool.getTokenAInfo().mint.PublicKey,
+  //     new PublicKey('HVJuVW2dRbZ2fynWEY2JK6Ak2YTfVpji73sHZMCqiXSb'),
+  //     'confirmed',
+  //     TOKEN_2022_PROGRAM_ID
+  //   );
+  //   // Token metadata
+  //   console.log('MintInfo:', mintInfo);
+  return 0;
 }
 
 async function main() {
