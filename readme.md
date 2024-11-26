@@ -1,6 +1,12 @@
 ### versions
 node 18
 
+### installation
+```
+nvm use 18 # (install nvm if not available)
+npm install
+```
+
 ### Testing
 node ./check_arbitrage_opportunity.js
 
